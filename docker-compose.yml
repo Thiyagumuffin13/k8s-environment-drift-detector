@@ -1,0 +1,9 @@
+services:
+  EnvironmentDriftDetector:
+    image: environment-drift-detector
+    build: .
+    container_name: environment-drift-detector-container
+    ports:
+      - "5138:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development

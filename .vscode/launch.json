@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Application directly to Chrome",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:5138/swagger/index.html",
+            "webRoot": "${workspaceFolder}",
+            "preLaunchTask": "run"
+        }
+    ]
+}
