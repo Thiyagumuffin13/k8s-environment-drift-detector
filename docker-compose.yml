@@ -3,7 +3,25 @@ services:
     image: environment-drift-detector
     build: .
     container_name: environment-drift-detector-container
+    depends_on:
+      - postgres
     ports:
       - "5138:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=DriftDb;Username=postgres;Password=root
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: environment-drift-detector-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=DriftDb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
