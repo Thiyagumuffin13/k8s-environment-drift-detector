@@ -1,0 +1,15 @@
+# Node dependencies — installed fresh inside Docker
+node_modules/
+
+# Previous build output
+dist/
+
+# Angular CLI cache
+.angular/
+
+# IDE files
+.vscode/
+
+# Misc
+*.log
+.dockerignore

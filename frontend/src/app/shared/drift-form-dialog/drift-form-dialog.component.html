@@ -1,0 +1,89 @@
+<div class="dialog-wrapper">
+  <!-- Header -->
+  <div class="dialog-header">
+    <div class="dialog-title-area">
+      <div class="dialog-icon">
+        <mat-icon>{{ isEdit ? 'edit' : 'add_circle_outline' }}</mat-icon>
+      </div>
+      <div>
+        <h2>{{ isEdit ? 'Edit Drift Event' : 'New Drift Event' }}</h2>
+        <p>{{ isEdit ? 'Update the drift event details' : 'Record a new drift detection' }}</p>
+      </div>
+    </div>
+    <button mat-icon-button class="close-btn" (click)="cancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="dialog-body">
+
+    <!-- Environment Name -->
+    <div class="form-field">
+      <label>Environment Name <span class="required">*</span></label>
+      <div class="input-wrapper" [class.error]="isFieldInvalid('environmentName')">
+        <mat-icon>cloud</mat-icon>
+        <input
+          formControlName="environmentName"
+          placeholder="e.g. production, staging, dev"
+        />
+      </div>
+      <span class="field-error" *ngIf="isFieldInvalid('environmentName')">
+        Environment name is required
+      </span>
+    </div>
+
+    <!-- Resource Name -->
+    <div class="form-field">
+      <label>Resource Name <span class="required">*</span></label>
+      <div class="input-wrapper" [class.error]="isFieldInvalid('resourceName')">
+        <mat-icon>dns</mat-icon>
+        <input
+          formControlName="resourceName"
+          placeholder="e.g. nginx-deployment, auth-service"
+        />
+      </div>
+      <span class="field-error" *ngIf="isFieldInvalid('resourceName')">
+        Resource name is required
+      </span>
+    </div>
+
+    <!-- Drift Type -->
+    <div class="form-field">
+      <label>Drift Type <span class="required">*</span></label>
+      <div class="select-wrapper" [class.error]="isFieldInvalid('driftType')">
+        <mat-icon>category</mat-icon>
+        <select formControlName="driftType">
+          <option value="" disabled>Select a drift type...</option>
+          <option *ngFor="let t of driftTypes" [value]="t.value">{{ t.label }}</option>
+        </select>
+      </div>
+      <span class="field-error" *ngIf="isFieldInvalid('driftType')">
+        Drift type is required
+      </span>
+    </div>
+
+    <!-- Is Resolved -->
+    <div class="form-field toggle-field">
+      <label>Status</label>
+      <div class="toggle-row">
+        <div class="toggle-label" [class.resolved]="form.get('isResolved')?.value">
+          <mat-icon>{{ form.get('isResolved')?.value ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+          {{ form.get('isResolved')?.value ? 'Resolved' : 'Active / Unresolved' }}
+        </div>
+        <mat-slide-toggle formControlName="isResolved" color="primary"></mat-slide-toggle>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="dialog-actions">
+      <button type="button" mat-stroked-button class="cancel-btn" (click)="cancel()">
+        Cancel
+      </button>
+      <button type="submit" mat-raised-button class="submit-btn" [disabled]="form.invalid">
+        <mat-icon>{{ isEdit ? 'save' : 'add' }}</mat-icon>
+        {{ isEdit ? 'Save Changes' : 'Create Drift' }}
+      </button>
+    </div>
+
+  </form>
+</div>

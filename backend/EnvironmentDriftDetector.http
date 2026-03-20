@@ -1,0 +1,46 @@
+@EnvironmentDriftDetector_HostAddress = http://localhost:5138
+
+### Get all drifts
+GET {{EnvironmentDriftDetector_HostAddress}}/api/drift
+Accept: application/json
+
+###
+
+### Get a drift by ID
+GET {{EnvironmentDriftDetector_HostAddress}}/api/drift/1
+Accept: application/json
+
+###
+
+### Create a new drift
+POST {{EnvironmentDriftDetector_HostAddress}}/api/drift
+Content-Type: application/json
+
+{
+  "environmentName": "production",
+  "resourceName": "nginx-deployment",
+  "driftType": "ConfigDrift",
+  "isResolved": false
+}
+
+###
+
+### Update a drift
+PUT {{EnvironmentDriftDetector_HostAddress}}/api/drift/1
+Content-Type: application/json
+
+{
+  "id": 1,
+  "environmentName": "production",
+  "resourceName": "nginx-deployment",
+  "driftType": "ConfigDrift",
+  "detectedAt": "2026-03-20T00:00:00Z",
+  "isResolved": true
+}
+
+###
+
+### Delete a drift
+DELETE {{EnvironmentDriftDetector_HostAddress}}/api/drift/1
+
+###

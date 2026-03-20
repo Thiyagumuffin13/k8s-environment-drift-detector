@@ -1,0 +1,103 @@
+/* Global Styles - K8s Drift Detector UI */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --primary-light: #818cf8;
+  --secondary: #0ea5e9;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --surface: #1e1e2e;
+  --surface-light: #2a2a3e;
+  --surface-card: #252537;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Inter', sans-serif;
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; }
+
+/* Angular Material dark theme overrides */
+.mat-mdc-dialog-container {
+  --mdc-dialog-container-color: var(--surface-card) !important;
+  --mdc-dialog-supporting-text-color: var(--text-primary) !important;
+}
+
+.mat-mdc-table {
+  background: transparent !important;
+}
+
+.mat-mdc-header-row {
+  background: rgba(99, 102, 241, 0.12) !important;
+}
+
+.mat-mdc-row:hover {
+  background: rgba(99, 102, 241, 0.06) !important;
+}
+
+.mdc-text-field--filled:not(.mdc-text-field--disabled) {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.mat-mdc-form-field-subscript-wrapper { display: none; }
+
+.mat-mdc-snack-bar-container {
+  --mdc-snackbar-container-color: var(--surface-light) !important;
+  --mdc-snackbar-supporting-text-color: var(--text-primary) !important;
+}
+
+/* Status badge */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+
+  &.resolved {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  &.unresolved {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+}
+
+/* Drift type chip */
+.drift-chip {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+
+  &.config { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+  &.resource { background: rgba(14, 165, 233, 0.15); color: #38bdf8; }
+  &.version { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+  &.scale { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+  &.other { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+}

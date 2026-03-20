@@ -1,0 +1,38 @@
+<div class="app-shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <mat-icon>radar</mat-icon>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">K8s Drift</span>
+        <span class="brand-sub">Detector</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="nav-item" routerLink="/" routerLinkActive="active"
+        [routerLinkActiveOptions]="{exact: true}" matTooltip="Dashboard">
+        <mat-icon>dashboard</mat-icon>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav-item" routerLink="/drifts" routerLinkActive="active" matTooltip="Drift Events">
+        <mat-icon>warning_amber</mat-icon>
+        <span>Drift Events</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="env-indicator">
+        <span class="dot"></span>
+        <span>API Connected</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

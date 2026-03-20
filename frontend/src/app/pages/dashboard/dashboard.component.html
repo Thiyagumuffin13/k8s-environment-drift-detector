@@ -1,0 +1,96 @@
+<div class="page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-title">
+        <h1>Dashboard</h1>
+        <p>Real-time overview of your Kubernetes environment drifts</p>
+      </div>
+      <a mat-raised-button routerLink="/drifts" class="cta-btn">
+        <mat-icon>warning_amber</mat-icon>
+        View All Drifts
+      </a>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="loading">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading drift data...</p>
+  </div>
+
+  <!-- Error -->
+  <div class="error-state" *ngIf="error && !loading">
+    <mat-icon>error_outline</mat-icon>
+    <p>{{ error }}</p>
+    <button mat-stroked-button (click)="loadData()">Retry</button>
+  </div>
+
+  <!-- Content -->
+  <div class="dashboard-content" *ngIf="!loading && !error">
+
+    <!-- Stat Cards -->
+    <div class="stats-grid">
+      <div class="stat-card" *ngFor="let card of statCards" [style.background]="card.gradient">
+        <div class="stat-icon">
+          <mat-icon>{{ card.icon }}</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ card.value }}</span>
+          <span class="stat-label">{{ card.label }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Drifts -->
+    <div class="section">
+      <div class="section-header">
+        <h2>Recent Drift Events</h2>
+        <a routerLink="/drifts" class="view-all-link">
+          View all <mat-icon>arrow_forward</mat-icon>
+        </a>
+      </div>
+      <div class="recent-list">
+        <div class="recent-empty" *ngIf="recentDrifts.length === 0">
+          <mat-icon>check_circle_outline</mat-icon>
+          <p>No drift events detected</p>
+        </div>
+        <div class="recent-item" *ngFor="let drift of recentDrifts" [class.resolved]="drift.isResolved">
+          <div class="recent-item-left">
+            <div class="recent-dot" [class.resolved]="drift.isResolved"></div>
+            <div class="recent-item-info">
+              <span class="recent-resource">{{ drift.resourceName }}</span>
+              <span class="recent-env">{{ drift.environmentName }}</span>
+            </div>
+          </div>
+          <div class="recent-item-right">
+            <span class="drift-chip" [ngClass]="getDriftClass(drift.driftType)">
+              {{ formatDriftType(drift.driftType) }}
+            </span>
+            <span class="recent-time">{{ drift.detectedAt | date:'short' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Environment Summary -->
+    <div class="section" *ngIf="environments.length > 0">
+      <div class="section-header">
+        <h2>Environments</h2>
+      </div>
+      <div class="env-grid">
+        <div class="env-card" *ngFor="let env of environments">
+          <div class="env-name">
+            <mat-icon>cloud</mat-icon>
+            {{ env.name }}
+          </div>
+          <div class="env-stats">
+            <span class="env-stat total">{{ env.total }} total</span>
+            <span class="env-stat active">{{ env.unresolved }} active</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

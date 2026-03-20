@@ -1,16 +1,4 @@
 services:
-  EnvironmentDriftDetector:
-    image: environment-drift-detector
-    build: .
-    container_name: environment-drift-detector-container
-    depends_on:
-      - postgres
-    ports:
-      - "5138:80"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=DriftDb;Username=postgres;Password=root
-
   postgres:
     image: postgres:15-alpine
     container_name: environment-drift-detector-db
@@ -22,6 +10,40 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d DriftDb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  backend:
+    image: environment-drift-detector
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: environment-drift-detector-container
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5138:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=DriftDb;Username=postgres;Password=root
+    restart: on-failure
+
+  frontend:
+    image: drift-detector-ui
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: drift-detector-ui-container
+    depends_on:
+      - backend
+    ports:
+      - "4200:80"
+    restart: on-failure
 
 volumes:
   postgres_data:

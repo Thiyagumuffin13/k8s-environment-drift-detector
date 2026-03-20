@@ -1,0 +1,14 @@
+# .NET build outputs — these are rebuilt inside Docker, don't send them
+obj/
+bin/
+
+# VS / IDE files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Misc
+*.log
+.dockerignore

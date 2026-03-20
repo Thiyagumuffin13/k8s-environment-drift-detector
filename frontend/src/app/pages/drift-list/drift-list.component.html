@@ -1,0 +1,154 @@
+<div class="page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1>Drift Events</h1>
+      <p>Manage and monitor all Kubernetes environment drift detections</p>
+    </div>
+    <button mat-raised-button class="add-btn" (click)="openCreateDialog()">
+      <mat-icon>add</mat-icon>
+      Add Drift
+    </button>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="table-toolbar">
+    <div class="search-box">
+      <mat-icon>search</mat-icon>
+      <input
+        placeholder="Search by environment, resource, or type..."
+        [(ngModel)]="filterValue"
+        (input)="applyFilter()"
+      />
+      <button *ngIf="filterValue" mat-icon-button (click)="clearFilter()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="toolbar-actions">
+      <span class="record-count">{{ dataSource.filteredData.length }} records</span>
+      <button mat-icon-button matTooltip="Refresh" (click)="loadData()" [disabled]="loading">
+        <mat-icon [class.spinning]="loading">refresh</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="loading && dataSource.data.length === 0">
+    <mat-spinner diameter="36"></mat-spinner>
+    <p>Loading drifts...</p>
+  </div>
+
+  <!-- Error -->
+  <div class="error-state" *ngIf="error && !loading">
+    <mat-icon>error_outline</mat-icon>
+    <p>{{ error }}</p>
+    <button mat-stroked-button (click)="loadData()">Retry</button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-container" *ngIf="!error">
+    <table mat-table [dataSource]="dataSource" matSort class="drift-table">
+
+      <!-- ID Column -->
+      <ng-container matColumnDef="id">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>#</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="id-badge">{{ row.id }}</span>
+        </td>
+      </ng-container>
+
+      <!-- Environment Column -->
+      <ng-container matColumnDef="environmentName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Environment</th>
+        <td mat-cell *matCellDef="let row">
+          <div class="env-cell">
+            <mat-icon class="env-icon">cloud</mat-icon>
+            {{ row.environmentName }}
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Resource Column -->
+      <ng-container matColumnDef="resourceName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Resource</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="resource-name">{{ row.resourceName }}</span>
+        </td>
+      </ng-container>
+
+      <!-- Drift Type Column -->
+      <ng-container matColumnDef="driftType">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Drift Type</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="drift-chip" [ngClass]="getDriftClass(row.driftType)">
+            {{ formatDriftType(row.driftType) }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Detected At Column -->
+      <ng-container matColumnDef="detectedAt">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Detected At</th>
+        <td mat-cell *matCellDef="let row">
+          <!-- FIX: DatePipe returns string|null; use '|| ""' to ensure type is string -->
+          <span class="date-cell" [matTooltip]="(row.detectedAt | date:'full') || ''">
+            {{ row.detectedAt | date:'MMM d, y HH:mm' }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Status Column -->
+      <ng-container matColumnDef="isResolved">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="status-badge" [ngClass]="row.isResolved ? 'resolved' : 'unresolved'">
+            <mat-icon>{{ row.isResolved ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            {{ row.isResolved ? 'Resolved' : 'Active' }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let row">
+          <div class="action-buttons">
+            <button mat-icon-button class="action-btn resolve-btn"
+              [matTooltip]="row.isResolved ? 'Mark as Active' : 'Mark as Resolved'"
+              (click)="toggleResolve(row)">
+              <mat-icon>{{ row.isResolved ? 'undo' : 'check_circle_outline' }}</mat-icon>
+            </button>
+            <button mat-icon-button class="action-btn edit-btn"
+              matTooltip="Edit"
+              (click)="openEditDialog(row)">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button class="action-btn delete-btn"
+              matTooltip="Delete"
+              (click)="deleteDrift(row)">
+              <mat-icon>delete_outline</mat-icon>
+            </button>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="data-row"></tr>
+
+      <!-- No data row -->
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell no-data-cell" [attr.colspan]="displayedColumns.length">
+          <div class="no-data">
+            <mat-icon>{{ filterValue ? 'search_off' : 'radar' }}</mat-icon>
+            <p>{{ filterValue ? 'No drifts match your search' : 'No drift events recorded yet' }}</p>
+            <button *ngIf="!filterValue" mat-stroked-button (click)="openCreateDialog()">
+              <mat-icon>add</mat-icon> Add First Drift
+            </button>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons></mat-paginator>
+  </div>
+</div>

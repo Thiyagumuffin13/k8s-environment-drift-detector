@@ -20,3 +20,9 @@ bld/
 *.userosscache
 *.sln.docstates
 *.suo
+
+# Angular / Node
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+*.log

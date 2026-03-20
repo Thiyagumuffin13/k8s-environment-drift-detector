@@ -32,6 +32,11 @@ To manage your database visually, you can use clients like **DBeaver** or **pgAd
 
 EF Core Migrations are the way we keep our database schema in sync with our C# models (like `DriftDetail`). Instead of writing SQL scripts (`CREATE TABLE...`) manually, EF Core generates them for us based on our actual C# code.
 
+## 2.1 need the dotnet global tool to be installed 
+```bash
+dotnet tool install --global dotnet-ef
+```
+
 ### How to Create a Migration
 
 When you add a new model or modify an existing one, you need to generate a new migration to update the database. Stop the running Docker containers, and run this command in the terminal at the repository root:

@@ -24,6 +24,21 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IDriftRepository, DriftRepository>();
 builder.Services.AddScoped<IDriftService, DriftService>();
 
+// Configure CORS for Angular frontend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngularFrontend", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:4200",   // Angular dev server
+                "http://localhost:80",      // Angular Docker container
+                "http://localhost"          // Nginx in Docker
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 // Configure Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -35,11 +50,13 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "EnvironmentDriftDetector API v1");
-});
-
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "EnvironmentDriftDetector API v1");
+    });
 }
+
+// Enable CORS - must be before UseHttpsRedirection and MapControllers
+app.UseCors("AllowAngularFrontend");
 
 // Automatic migrations on startup with Retry Logic
 using (var scope = app.Services.CreateScope())
@@ -76,6 +93,7 @@ using (var scope = app.Services.CreateScope())
         throw; // Let the container crash if we absolutely cannot connect after all retries
     }
 }
+
 app.UseHttpsRedirection();
 
 // Map controllers
