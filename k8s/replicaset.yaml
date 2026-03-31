@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: frontend-replicaset
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drift-frontend
+  template:
+    metadata:
+      labels:
+        app: drift-frontend
+    spec:
+      containers:
+      - name: drift-frontend
+        image: drift-frontend:1.0
+        ports:
+        - containerPort: 80

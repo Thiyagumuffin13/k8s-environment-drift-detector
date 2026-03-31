@@ -114,3 +114,17 @@ docker compose down
 - **Angular 17** — Standalone components + Angular Material
 - **PostgreSQL 15** — via EF Core + Npgsql
 - **Docker** — Multi-container setup
+
+
+## minikube setup with docker images 
+minikube start
+- **Use Minikube Docker** - eval $(minikube docker-env)
+- **Build Docker backend Image** - docker build -t drift-backend:1.0 ./backend
+- **Build Docker frontend Image** - docker build -t drift-frontend:1.0 ./frontend
+- **Check Images** - minikube image ls/ docker images
+- **Apply Kubernetes YAML** - kubectl apply -f k8s/frontend.yaml
+- **Port Forward** - kubectl port-forward drift-frontend-pod 4200:80
+- **Port Forward** - kubectl port-forward backend-pod 5138:80
+- **Check Pods with ip** - kubectl get pods -o wide 
+- **Watch Pods for replica(live removing and creation of pods)** - kubectl get pods --watch
+- **Delete a pod** - kubectl delete pod <pod-name>

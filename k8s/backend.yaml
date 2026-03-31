@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: backend-pod
+  labels:
+    app: backend
+spec:
+  containers:
+    - name: backend
+      image: drift-backend:1.0
+      ports:
+        - containerPort: 80   # ✅ FIXED (was 8001)
+
+      env:
+        - name: ASPNETCORE_URLS
+          value: "http://+:80"   # ✅ IMPORTANT
+
+        - name: ConnectionStrings__DefaultConnection
+          value: "Host=10.244.0.45;Port=5432;Database=DriftDb;Username=postgres;Password=root"

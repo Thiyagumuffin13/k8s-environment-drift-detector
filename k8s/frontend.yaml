@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: frontend-pod
+spec:
+  containers:
+  - name: drift-frontend
+    image: drift-frontend:1.0
+    ports:
+    - containerPort: 80  # Adjust if your frontend uses a different port
+
