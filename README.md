@@ -128,3 +128,8 @@ minikube start
 - **Check Pods with ip** - kubectl get pods -o wide 
 - **Watch Pods for replica(live removing and creation of pods)** - kubectl get pods --watch
 - **Delete a pod** - kubectl delete pod <pod-name>
+- **Open frontend in browser** - minikube service frontend
+- **Access postgres pod** -kubectl exec -it postgres-pod -- sh
+- **Access postgres database**  psql -U postgres -d DriftDb
+- **List tables** - \dt
+- **Query table** - SELECT * FROM "DriftDetails";

@@ -9,11 +9,11 @@ spec:
     - name: backend
       image: drift-backend:1.0
       ports:
-        - containerPort: 80   # ✅ FIXED (was 8001)
+        - containerPort: 5138   # ✅ FIXED (was 8001)
 
       env:
         - name: ASPNETCORE_URLS
-          value: "http://+:80"   # ✅ IMPORTANT
+          value: "http://+:5138"   # ✅ IMPORTANT
 
         - name: ConnectionStrings__DefaultConnection
-          value: "Host=10.244.0.45;Port=5432;Database=DriftDb;Username=postgres;Password=root"
+          value: "Host=postgres;Port=5432;Database=DriftDb;Username=postgres;Password=root"

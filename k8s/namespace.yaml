@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: drift-detector
+  labels:
+    app: environment-drift-detector
+    env: learning

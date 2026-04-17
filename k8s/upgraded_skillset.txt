@@ -1,0 +1,99 @@
+## 📁 My Project Structure (IMPORTANT CONTEXT)
+
+I am working on a full-stack project with the following structure:
+
+k8s-environment-drift-detector/
+├── backend/            ← .NET Web API (ASP.NET Core)
+│   ├── Dockerfile
+│   └── source code
+├── frontend/           ← Angular 17 application
+│   ├── Dockerfile
+│   └── source code
+├── k8s/                ← All Kubernetes YAML files
+│   ├── postgres.yaml
+│   ├── backend.yaml
+│   ├── frontend.yaml
+│   ├── configmap.yaml
+│   ├── secret.yaml
+│   ├── ingress.yaml
+│   ├── hpa.yaml
+│   └── other k8s resources
+├── docker-compose.yml  ← Local multi-container setup
+├── README.md
+
+---
+
+## 🔄 Current Workflow I Follow
+
+1. Start Minikube
+2. Use Minikube Docker environment:
+
+   * eval $(minikube docker-env)
+3. Build images:
+
+   * docker build -t drift-backend:1.0 ./backend
+   * docker build -t drift-frontend:1.0 ./frontend
+4. Verify images:
+
+   * minikube image ls
+5. Apply Kubernetes YAML files:
+
+   * kubectl apply -f k8s/
+6. Verify:
+
+   * kubectl get pods
+   * kubectl get svc
+7. Access application:
+
+   * minikube service frontend
+
+---
+
+## 🎯 Expectations for Answers
+
+When I ask questions:
+
+* Always align with this folder structure
+* Refer to correct paths (./backend, ./frontend, ./k8s)
+* Provide YAML files assuming they are inside `/k8s` folder
+* Ensure Docker images match:
+
+  * drift-backend:1.0
+  * drift-frontend:1.0
+* Prefer Minikube-compatible setup
+* Do NOT suggest unrelated architectures unless needed
+
+---
+
+## 📦 Deployment Understanding Level
+
+Assume I already:
+
+* Know Docker basics
+* Built images successfully
+
+Now help me:
+
+* Improve architecture
+* Add production-grade concepts
+* Understand internal working deeply
+* Prepare for interviews
+* Understand Pods and Services etc 
+
+---
+
+## 📌 Response Style
+
+* Step-by-step explanation
+* Real-world analogy where helpful
+* YAML + explanation
+* Commands + verification steps
+* Common mistakes to avoid
+
+---
+
+## 🚀 My Goal
+
+* Become strong in Kubernetes (practical + conceptual)
+* Integrate Kubernetes with .NET + Angular apps
+* Be able to explain end-to-end flow in interviews

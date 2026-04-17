@@ -7,9 +7,10 @@ import { DriftDetail } from '../models/drift-detail';
   providedIn: 'root'
 })
 export class DriftService {
-  private readonly apiUrl = 'http://localhost:5138/api/drift';
+  //private readonly apiUrl = 'http://localhost:5138/api/drift';
+  private readonly apiUrl = '/api/drift';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   getAll(): Observable<DriftDetail[]> {
     return this.http.get<DriftDetail[]>(this.apiUrl);
