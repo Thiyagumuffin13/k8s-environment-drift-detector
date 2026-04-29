@@ -122,13 +122,19 @@ minikube start
 - **Build Docker backend Image** - docker build -t drift-backend:1.0 ./backend
 - **Build Docker frontend Image** - docker build -t drift-frontend:1.0 ./frontend
 - **Check Images** - minikube image ls/ docker images
-- **Apply Kubernetes YAML** - kubectl apply -f k8s/frontend.yaml
+- **Apply Kubernetes Backend YAML** - kubectl apply -f k8s/backend.yaml
+- **Apply Kubernetes Frontend YAML** - kubectl apply -f k8s/frontend.yaml
+- **Apply Kubernetes Database YAML** - kubectl apply -f k8s/postgresql.yaml
+- **Open frontend in browser** - minikube service frontend
+- **Check Pods with ip** - kubectl get pods -o wide 
+- **Delete a pod** - kubectl delete pod <pod-name>
+- **Access backend pod** -kubectl exec -it <backend-pod> -- sh
+       - **Ping postgres** - `ping postgres` (you will get something like -PING postgres.default.svc.cluster.local (10.104.2.53). This demonstrates K8s built-in CoreDNS. It automatically resolves the service name `postgres` to its internal IP via `postgres.default.svc.cluster.local`, so you never need to hardcode IPs).
+
+
 - **Port Forward** - kubectl port-forward drift-frontend-pod 4200:80
 - **Port Forward** - kubectl port-forward backend-pod 5138:80
-- **Check Pods with ip** - kubectl get pods -o wide 
 - **Watch Pods for replica(live removing and creation of pods)** - kubectl get pods --watch
-- **Delete a pod** - kubectl delete pod <pod-name>
-- **Open frontend in browser** - minikube service frontend
 - **Access postgres pod** -kubectl exec -it postgres-pod -- sh
 - **Access postgres database**  psql -U postgres -d DriftDb
 - **List tables** - \dt
