@@ -31,6 +31,93 @@ Running `kubectl get all` shows Services, Pods, ReplicaSets, Deployments, and mo
    - You will get "could not connect to server" & failure detected.
 4. **Fix:** Correct the port in the YAML file and reapply `service.yaml`.
 
+## Phase 2 Learning: Deployments & Scaling
+
+### 1. Pod Crash Simulation
+1. **Action:** Exec into the backend pod and simulate a crash.
+   ```bash
+   kubectl exec -it <backend-pod-name> -- sh 
+   kill 1
+   ```
+2. **Observation:** In another terminal, watch the pods live using `kubectl get pods -w`.
+3. **Result:** 👉 The Pod will restart automatically.
+
+### 2. Delete Pod (Replica Recovery)
+1. **Action:** Delete a running pod.
+   ```bash
+   kubectl delete pod <pod-name>
+   ```
+2. **Result:** A new pod is created automatically. The ReplicaSet (managed by the Deployment) ensures the desired number of replicas is always running.
+
+### 3. Scale Up / Down
+1. **Action:** Scale the backend deployment to 3 replicas.
+   ```bash
+   kubectl scale deployment backend-deployment --replicas=3
+   ```
+2. **Verify:** Check the running pods using `kubectl get pods`.
+3. **Learn:** This demonstrates **Horizontal Scaling** and **Load Distribution** across multiple instances of your application.
+
+### 4. Rolling Update (VERY IMPORTANT)
+1. **Action:** Update the image to a non-existent version to simulate a bad deployment.
+   ```bash
+   kubectl set image deployment/backend-deployment backend=wrong-image
+   ```
+2. **Observation (Status Check):** Watch the pods with `kubectl get pods`, and check the official rollout status:
+   ```bash
+   kubectl rollout status deployment backend-deployment
+   ```
+   *The command will show the rollout is stuck because the new pod will fail with `ErrImagePull` or `ImagePullBackOff`.*
+3. **Observation (History):** Check the deployment history to see previous and current revisions.
+   ```bash
+   kubectl rollout history deployment backend-deployment
+   ```
+4. **Fix (Rollback):** Undo the bad deployment to revert to the previous working revision.
+   ```bash
+   kubectl rollout undo deployment backend-deployment
+   ```
+5. **Deployment Strategy (Recreate vs. RollingUpdate):**
+   - By default, deployments use the **RollingUpdate** strategy. This means it spins up the new version (new ReplicaSet and Pod) *before* destroying the old one. If the new image fails to pull (like our `wrong-image` test), the new pod crashes, but the **old pod stays running**. This ensures zero downtime.
+   - If the strategy was set to **Recreate** (`strategy: type: Recreate`), it would destroy the existing pod *before* creating the new one, resulting in application downtime during the update (or complete outage if the new image is bad).
+6. **Learn:** Zero downtime deployments, rollout status tracking, and the rollback mechanism.
+
+### 5. Postgres Failure (IMPORTANT)
+1. **Action:** Break the database by deleting its pod.
+   ```bash
+   kubectl delete pod postgres-pod
+   ```
+2. **Observation:** Data may be lost (if no volume is attached) and frontend network calls will start returning a `500 Internal Server Error`.
+3. **Learn:** 👉 This is exactly WHY you need a **StatefulSet + PVC (PersistentVolumeClaim)** for databases instead of just a Pod. 
+4. **Fix:** For a temporary fix, you can run `kubectl apply -f k8s/postgres.yaml` again. *However*, because the backend maintains a connection pool, it will still try to use the broken connection and fail. You must also restart the backend so it creates a fresh connection to the new database:
+   ```bash
+   kubectl rollout restart deployment backend-deployment
+   ```
+
+### 6. Network Debugging
+1. **Action:** Execute into the frontend pod to test internal cluster connectivity.
+   ```bash
+   kubectl exec -it <frontend-pod-name> -- curl backend
+   ```
+2. **Observation:** If it fails, it usually indicates either a DNS issue or a Service issue.
+3. **Failure Scenario A (Service Missing / DNS Issue):**
+   - *Action:* Delete the backend service (`kubectl delete service backend`) and run the curl command again.
+   - *Error output:* `curl: (6) Could not resolve host: backend (Timeout while contacting DNS servers) command terminated with exit code 6`
+   - *Why:* CoreDNS cannot find any IP address registered for the name "backend" because the service doesn't exist.
+4. **Failure Scenario B (Pods Missing / Connection Refused):**
+   - *Action:* Recreate the service, then delete the backend deployment (`kubectl delete deployment backend-deployment`) and run the curl command.
+   - *Error output:* `curl: (7) Failed to connect to backend port 80 after 1 ms: Could not connect to server command terminated with exit code 7`
+   - *Why:* DNS successfully resolves "backend" to a Service ClusterIP, but there are no backend pods running behind that service to accept the traffic, so the connection is refused.
+
+### 7. Node Failure Simulation (Advanced)
+If using minikube, you can simulate a complete node failure and recovery:
+1. **Action:** Stop and start the minikube cluster.
+   ```bash
+   minikube stop
+   minikube start
+   ```
+2. **Observation:** Watch the pods using `kubectl get pods -w`. After the restart, you will see the frontend and backend pods go through various states:
+   `Running` ➡️ `Error` ➡️ `CrashLoopBackOff` ➡️ finally `Running`.
+3. **Learn:** This demonstrates **Cluster restart behavior** and **Pod rescheduling** as the cluster recovers from a full node outage.
+
 ## Minikube Service & NodePort Access
 Sometimes you need to access your services manually without `minikube service`:
 

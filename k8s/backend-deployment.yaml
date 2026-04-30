@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # <--- This kills the old existing pod first if we have Recreate, to prevent add rollingupdate if not mentioned by default is also rollingupdate
+    #rollingUpdate: # <--- This is for rollingupdate only not for recreate
+      #maxUnavailable: 25%
+      #maxSurge: 25%
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: drift-backend:1.0
+          ports:
+            - containerPort: 5138
+          env:
+            - name: ASPNETCORE_URLS
+              value: "http://+:5138"
+            - name: ConnectionStrings__DefaultConnection
+              value: "Host=postgres;Port=5432;Database=DriftDb;Username=postgres;Password=root"
