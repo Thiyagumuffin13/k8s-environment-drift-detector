@@ -203,3 +203,42 @@ Use `kubectl describe pod <pod-name>`. In the events, you will clearly see `ErrI
 | `describe` | Events + Scheduling + Kubernetes lifecycle errors |
 
 *Crucial Tip: If a pod completely fails to start, the logs may be EMPTY. You MUST use `kubectl describe pod` to find out why.*
+
+---
+
+## 10. Database Modernization (Secrets, ConfigMaps, Storage, StatefulSets)
+
+### 1. Secrets (Secure Passwords)
+- **What:** Stores sensitive data in Base64 format instead of plain text.
+- **Why:** Prevents passwords from being exposed in YAML files or source control.
+- **Verify:** `kubectl get secret` or `kubectl describe secret db-secret` (Note: Kubernetes intentionally hides the actual password on screen).
+- **Backend Change:** Used `secretKeyRef` to inject `POSTGRES_PASSWORD` and `POSTGRES_USER` dynamically into the connection string.
+
+### 2. ConfigMaps (Non-Sensitive Configs)
+- **What:** Stores plain-text settings (like database names, hostnames).
+- **Why:** Allows configuration changes in one central place without rewriting multiple deployment YAMLs.
+- **Verify:** `kubectl get cm` or `kubectl describe cm backend-config`.
+- **Backend Change:** Used `configMapKeyRef` to inject `DB_HOST`, `DB_NAME`, etc.
+
+### 3. Storage: Persistent Volumes (PV/PVC)
+- **What is the exact difference?**
+  - **PV (Persistent Volume):** The actual physical piece of storage hardware provisioned by an Administrator (e.g., a 1GB slice of the Minikube hard drive).
+  - **PVC (Persistent Volume Claim):** A request or "claim ticket" created by a Developer saying "My app needs a 1GB hard drive". Kubernetes automatically finds a matching available PV and "Binds" them together.
+- **Why:** Pods are ephemeral (temporary). Without a PVC attached, if a database pod restarts, all tables and data are permanently destroyed. A PVC ensures data survives.
+- **Verify:** Run `kubectl get pv` and `kubectl get pvc`. Look for the `STATUS` column to say `Bound` (which means the claim ticket successfully matched with the hard drive).
+- **Testing Scenario (Verify Data Persistence in CMD):**
+  1. *Save Data:* Inject test data directly into the DB: `kubectl exec -it postgres-0 -- psql -U postgres -d DriftDb -c "CREATE TABLE storage_test (id int); INSERT INTO storage_test VALUES (99);"`
+  2. *Break:* Forcefully delete the database pod: `kubectl delete pod postgres-0`
+  3. *Fix:* Because we are using a StatefulSet, Kubernetes instantly spins up a new `postgres-0` pod and re-attaches the exact same PVC to it.
+  4. *Verify:* Wait for the pod to say `Running`, then check if your data survived the destruction: `kubectl exec -it postgres-0 -- psql -U postgres -d DriftDb -c "SELECT * FROM storage_test;"`
+- **Testing Scenario 2 (Deep Dive into PV & PVC Binding):**
+  1. *Clean Slate:* Delete both existing resources: `kubectl delete pvc postgres-pvc` and `kubectl delete pv postgres-pv`.
+  2. *Break (The Unfulfilled Claim):* Open `k8s/storage.yaml` and temporarily comment out or delete the entire `PersistentVolume` section at the top, leaving ONLY the `PersistentVolumeClaim`. Apply it: `kubectl apply -f k8s/storage.yaml`
+  3. *Observe the Pending State:* Run `kubectl get pvc`. The status will say **Pending**. Why? Because the Developer (PVC) asked for a 1Gi hard drive, but the Administrator (PV) hasn't plugged one into the cluster yet!
+  4. *Fix (Provision the Drive):* Open `k8s/storage.yaml` and put the `PersistentVolume` section back in. Apply it: `kubectl apply -f k8s/storage.yaml`.
+  5. *Observe the Magic:* Run `kubectl get pvc` and `kubectl get pv`. The status instantly changes to **Bound**! Kubernetes detected a new physical hard drive (PV) that matched the claim ticket (PVC) and permanently linked them together.
+
+### 4. StatefulSet (The Ultimate Database Controller)
+- **What:** A special type of Deployment designed specifically for stateful apps (databases).
+- **Why:** Unlike standard Deployments (which treat pods as identically disposable), StatefulSets give pods a strict, sticky identity (e.g., `postgres-0`). This guarantees the pod always reconnects to the exact same PVC when it restarts. It also provides auto-recreation (self-healing) if the database pod is manually deleted.
+- **Dependency (Headless Service):** StatefulSets require a "Headless Service" (a service with `clusterIP: None`) in `services.yaml` to directly manage the network identity of the individual pods rather than randomly load balancing traffic.
