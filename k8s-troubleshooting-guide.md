@@ -118,6 +118,35 @@ If using minikube, you can simulate a complete node failure and recovery:
    `Running` ➡️ `Error` ➡️ `CrashLoopBackOff` ➡️ finally `Running`.
 3. **Learn:** This demonstrates **Cluster restart behavior** and **Pod rescheduling** as the cluster recovers from a full node outage.
 
+## 8. Minikube Docker Environment Error
+If you try to run `docker build -t drift-frontend:1.0 ./frontend` inside a Minikube environment without setting the docker-env, you will likely get an error:
+> `ERROR: error during connect: Get "https://127.0.0.1:49918/_ping": ... actively refused it.`
+**Why:** Your local terminal is trying to talk to Docker Desktop (which might not be running). You must point your terminal's Docker commands to the Minikube virtual machine's Docker engine by running `eval $(minikube docker-env)` first!
+
+## 9. Kubernetes Probes (Readiness vs Liveness)
+Do we need the same endpoint for both probes? **No! In fact, best practice is to split them:**
+- **Readiness Probe (`/api/health/readiness`):** Checks if the app is fully ready for traffic (e.g., checks database connectivity). If it fails, Kubernetes **stops sending traffic** to the pod, but it **does not** restart it.
+- **Liveness Probe (`/api/health/liveness`):** Checks if the app process is frozen or deadlock. (Usually just returns a 200 OK without checking the database). If it fails, Kubernetes **kills and restarts** the pod.
+- **Frontend Probes (Nginx/Angular):** For a frontend application, the web server (Nginx) is generally simple and has no complex boot sequence or downstream dependencies (like a database) to wait for. If Nginx is running, it is both "Alive" and "Ready" instantly. Therefore, frontends typically share the exact same endpoint (e.g., `/health`) for both Liveness and Readiness probes in the real world. (If needed for testing, you can explicitly update the `nginx.conf` and deployment YAML to use separate paths like adding 
+# Liveness endpoint for Kubernetes
+  location /health/liveness {
+    access_log off;
+    add_header Content-Type text/plain;
+    return 200 'OK';
+  }
+
+  # Readiness endpoint for Kubernetes
+  location /health/readiness {
+    access_log off;
+    add_header Content-Type text/plain;
+    return 200 'OK';
+  }
+ and then add them in `yaml file` to test it.)
+- **Testing Gotcha (Nginx):** Single Page Applications (SPAs) like Angular use Nginx to catch all unknown paths (like `/wrong-path`) and return `index.html` with a `200 OK` in this part   # Serve Angular app - redirect all routes to index.html
+  location / {
+    try_files $uri $uri/ /index.html;
+  }. This tricks Kubernetes into thinking the probe passed! To properly test an HTTP probe failure on a frontend, you must add an explicit Nginx location block (like `/force-500`) that returns a real error.
+
 ## Minikube Service & NodePort Access
 Sometimes you need to access your services manually without `minikube service`:
 

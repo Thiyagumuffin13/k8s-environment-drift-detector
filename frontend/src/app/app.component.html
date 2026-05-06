@@ -24,9 +24,9 @@
     </nav>
 
     <div class="sidebar-footer">
-      <div class="env-indicator">
-        <span class="dot"></span>
-        <span>API Connected</span>
+      <div class="env-indicator" [class.unhealthy]="!isApiHealthy">
+        <span class="dot" [class.healthy]="isApiHealthy" [class.unhealthy]="!isApiHealthy"></span>
+        <span>{{ apiStatusMessage }}</span>
       </div>
     </div>
   </aside>
