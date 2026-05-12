@@ -238,7 +238,89 @@ Use `kubectl describe pod <pod-name>`. In the events, you will clearly see `ErrI
   4. *Fix (Provision the Drive):* Open `k8s/storage.yaml` and put the `PersistentVolume` section back in. Apply it: `kubectl apply -f k8s/storage.yaml`.
   5. *Observe the Magic:* Run `kubectl get pvc` and `kubectl get pv`. The status instantly changes to **Bound**! Kubernetes detected a new physical hard drive (PV) that matched the claim ticket (PVC) and permanently linked them together.
 
+  **Note if unable to delete the pvc or pv then check for finalizers with the kubectl describe command and if Finalizers: `[kubernetes.io/pv-protection]` then remove the finalizer by editing the pvc or pv using this comment `kubectl patch pvc <pvc-name> -p '{"metadata":{"finalizers":null}}'` or `kubectl patch pv <pv-name> -p '{"metadata":{"finalizers":null}}'`**
+
 ### 4. StatefulSet (The Ultimate Database Controller)
 - **What:** A special type of Deployment designed specifically for stateful apps (databases).
 - **Why:** Unlike standard Deployments (which treat pods as identically disposable), StatefulSets give pods a strict, sticky identity (e.g., `postgres-0`). This guarantees the pod always reconnects to the exact same PVC when it restarts. It also provides auto-recreation (self-healing) if the database pod is manually deleted.
 - **Dependency (Headless Service):** StatefulSets require a "Headless Service" (a service with `clusterIP: None`) in `services.yaml` to directly manage the network identity of the individual pods rather than randomly load balancing traffic.
+
+---
+
+## 11. Namespaces and Network Isolation (FQDN)
+
+### 1. Namespaces (The Virtual Cluster)
+- **What:** A way to logically divide a single Kubernetes cluster into multiple "virtual clusters" (e.g., `default`, `drift-detector`, `kube-system`).
+- **Why:** Used to organize resources and isolate environments (like separating Development from Production on the same hardware).
+- **Verify:** `kubectl get namespaces` and `kubectl get all -n <namespace-name>`.
+
+### 2. Fully Qualified Domain Names (FQDN)
+- **What:** The absolute, complete DNS address of a Kubernetes Service. The formula is: `<service-name>.<namespace>.svc.cluster.local`.
+- **Why:** If two pods are in the **same namespace**, they can communicate using short names (e.g., `"postgres"`). If they are in **different namespaces**, the short name will fail (DNS lookup failure). They must use the FQDN to cross the namespace boundary.
+
+### 3. Testing Scenario (Cross-Namespace DNS Break/Fix)
+This scenario proves that Kubernetes isolates network resolution by namespace.
+1. **The Setup:** Deploy the Database (`postgres`) in the `drift-detector` namespace, and the Backend in the `default` namespace.
+2. **The Break:** Configure the Backend to connect using `DB_HOST: "postgres"`.
+   - *Result:* The Backend Readiness probe fails. `kubectl logs` will show a connection error because it is searching for `"postgres"` inside the `default` namespace and cannot find it.
+3. **The Fix:** Edit the Backend's ConfigMap to use the FQDN: `DB_HOST: "postgres.drift-detector.svc.cluster.local"`.
+   - *Result:* Restart the Backend pod. It successfully traverses the namespace boundary, finds the database, and the health checks turn green!
+
+---
+
+## 12. Ingress & External Traffic
+
+### 1. The `ingress.yaml` Anatomy
+**`apiVersion: networking.k8s.io/v1`**
+`apiVersion` tells Kubernetes which version of the API to use for this file. `networking.k8s.io/v1` is the stable version of the Ingress API. Think of it like saying "I am writing in English, version 1.0" so Kubernetes knows how to read it.
+
+**`kind: Ingress`**
+`kind` tells Kubernetes what TYPE of object this YAML file is describing. Just like a blueprint can describe a house OR a car, this blueprint describes an Ingress object (a traffic routing rule).
+
+**`metadata:`**
+- **`name: drift-detector-ingress`**: The unique identifier for this Ingress rule inside your cluster.
+- **`namespace: drift-detector`**: Means this Ingress lives inside your `drift-detector` namespace — it only applies to services in that same namespace.
+
+**`annotations:`**
+Annotations are like sticky notes attached to the object. These two notes tell the Nginx controller:
+- `nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"`: If Nginx cannot connect to your backend service within 30 seconds, give up and return a timeout error.
+- `nginx.ingress.kubernetes.io/proxy-read-timeout: "30"`: If your backend is connected but takes more than 30 seconds to respond, give up. These prevent users from waiting forever if something is broken.
+
+> **Important Annotation Warning:** Be very careful with the annotation `nginx.ingress.kubernetes.io/rewrite-target: /`. This strips the URL path before passing it to your backend. Example: A user visits `/api/health` — Nginx converts it to `/` before sending to your backend. Your backend then gets `/` and returns a `404 Not Found` because it was expecting `/api/health`! Your current `ingress.yaml` does NOT have this annotation, which is correct.
+
+**`spec.ingressClassName: nginx`**
+If your cluster has multiple Ingress Controllers installed (nginx, traefik, haproxy etc.), this line tells Kubernetes which one to use for this specific set of rules.
+
+**`spec.rules: - host: drift-detector.local`**
+This is the domain name this rule applies to. The Nginx controller will only process requests that come in with the Host header set to `drift-detector.local`. If you try to access the cluster by raw IP, the rule is ignored and you get a 404. This is why you add this line to your Windows hosts file: `C:\Windows\System32\drivers\etc\hosts` (`<minikube-ip> drift-detector.local`).
+
+**`http.paths:`**
+This is the heart of the Ingress. Three routes are defined:
+- **Path `/` (Prefix)** -> **`frontend` (80)**: All requests go to Angular frontend first.
+- **Path `/api` (Prefix)** -> **`backend` (80)**: Any URL starting with `/api` goes to C# backend.
+- **Path `/swagger` (Prefix)** -> **`backend` (80)**: Swagger UI also served from backend.
+
+### 2. Ingress Breakable & Fixable Scenarios
+
+**Scenario 1: Wrong Path Type Causes 404**
+- **BREAK:** Change `pathType: Prefix` to `pathType: Exact` for `/api` and apply the file.
+- **OBSERVE:** Visiting `/api/drift` in your browser gives a 404 from Nginx. Why? Exact type only matches the path `/api` exactly — `/api/drift` does not match!
+- **FIX:** Change `pathType` back to `Prefix` and reapply: `kubectl apply -f k8s/ingress.yaml`
+
+**Scenario 2: Wrong Backend Service Name**
+- **BREAK:** Change backend service name from "frontend" to "frontned" (typo) and apply.
+- **OBSERVE:** Browser shows `503 Service Unavailable`. Nginx cannot find a service named "frontned" in the namespace.
+- **FIX:** Fix the typo and reapply the ingress YAML. Use: `kubectl describe ingress drift-detector-ingress` to inspect the current rules.
+
+**Scenario 3: Missing hosts Entry**
+- **BREAK:** Remove the `drift-detector.local` line from your Windows hosts file.
+- **OBSERVE:** Browser cannot resolve `drift-detector.local` — shows `DNS_PROBE_FINISHED_NXDOMAIN` error.
+- **FIX:** Add the line back: `<minikube-ip> drift-detector.local` in `C:\Windows\System32\drivers\etc\hosts` (run Notepad as Administrator to edit).
+
+### 2. `minikube tunnel` vs `minikube service`
+- **`minikube service <name>`:**
+  - **What it does:** It creates a temporary, direct port-forward to a specific NodePort service.
+  - **Use Case:** Quick, dirty testing. It completely bypasses Ingress, DNS, and professional routing. It just gives you a random IP and Port (like `127.0.0.1:55212`).
+- **`minikube tunnel`:**
+  - **What it does:** It acts as a permanent network bridge between your computer (localhost) and the entire Kubernetes cluster network.
+  - **Use Case:** Production-like testing. It allows your local computer's DNS (via the Windows `hosts` file) to hit the cluster's internal Ingress Controller on port 80, exactly how a real user would hit your website via a real domain name.
